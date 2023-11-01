@@ -14,8 +14,8 @@ type Elf struct {
 	CaloriesCount int
 }
 
-func NewElf(id int, meals []int, calories int) Elf {
-	return Elf{
+func NewElf(id int, meals []int, calories int) *Elf {
+	return &Elf{
 		Id:            id,
 		Meals:         meals,
 		CaloriesCount: calories,
@@ -32,18 +32,18 @@ type Population struct {
 	LeadElfs []Elf
 }
 
-func NewPopulation() Population {
-	return Population{Elfs: []Elf{}}
+func NewPopulation() *Population {
+	return &Population{Elfs: []Elf{}}
 }
 
-func (p *Population) GetLatestElf() Elf {
+func (p *Population) GetLatestElf() *Elf {
 	if len(p.Elfs) == 0 {
 		elf := NewElf(1, []int{}, 0)
-		p.addElf(elf)
-		p.LeadElfs = []Elf{elf}
+		p.AddElf(*elf)
+		p.LeadElfs = []Elf{*elf}
 		return elf
 	}
-	return p.Elfs[len(p.Elfs)-1]
+	return &p.Elfs[len(p.Elfs)-1]
 }
 
 func (p *Population) GetLeadersCalories() int {
@@ -54,24 +54,16 @@ func (p *Population) GetLeadersCalories() int {
 	return result
 }
 
-func (p *Population) addElf(e Elf) {
-	elfs := p.Elfs
-	p.Elfs = append(elfs, e)
+func (p *Population) AddElf(e Elf) {
+	p.Elfs = append(p.Elfs, e)
 }
 
 func (p *Population) AddNextElf() {
 	latest := p.GetLatestElf()
 	idx := latest.Id + 1
 	e := NewElf(idx, []int{}, 0)
-	p.addElf(e)
-	leaders := p.ReplaceLeader(latest)
-	p.LeadElfs = leaders
-}
-
-func (p *Population) SaveElf(e Elf) {
-	elfs := p.Elfs
-	elfs[e.Id-1] = e
-	p.Elfs = elfs
+	p.AddElf(*e)
+	p.ReplaceLeader(*latest)
 }
 
 func (p *Population) FindSmallestLeader() Elf {
@@ -85,14 +77,14 @@ func (p *Population) FindSmallestLeader() Elf {
 	return leader
 }
 
-func (p *Population) ReplaceLeader(newElf Elf) []Elf {
+func (p *Population) ReplaceLeader(newElf Elf) {
 	if len(p.LeadElfs) < 3 {
-		return append(p.LeadElfs, newElf)
+		p.LeadElfs = append(p.LeadElfs, newElf)
 	}
 
 	smallestLeader := p.FindSmallestLeader()
 	if newElf.CaloriesCount <= smallestLeader.CaloriesCount {
-		return p.LeadElfs
+		return
 	}
 
 	for i, elf := range p.LeadElfs {
@@ -101,7 +93,6 @@ func (p *Population) ReplaceLeader(newElf Elf) []Elf {
 			break
 		}
 	}
-	return p.LeadElfs
 }
 
 func main() {
@@ -117,7 +108,7 @@ func main() {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		processLine(line, &population)
+		processLine(line, population)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -140,7 +131,6 @@ func processLine(line string, population *Population) {
 
 	elf := population.GetLatestElf()
 	elf.AddMeal(meal)
-	population.SaveElf(elf)
 }
 
 func closeFile(f *os.File) {
